@@ -1,0 +1,43 @@
+# code: language=yaml
+#
+# Helm release for Emissary CRDs
+#
+# Must be installed before the ingress controller.
+# Provides Mapping, Host, TLSContext, and other gateway CRDs.
+#
+
+{{- $em := $state.emissary }}
+{{- $crds := $em.crds }}
+
+{{- if $crds.enabled }}
+---
+apiVersion: helm.m.crossplane.io/v1beta1
+kind: Release
+metadata:
+  name: {{ $crds.releaseName }}
+  annotations:
+    {{ setResourceNameAnnotation "helm-release-emissary-crds" }}
+  labels: {{ $em.labels | toJson }}
+spec:
+  managementPolicies: {{ $em.managementPolicies | toJson }}
+  forProvider:
+    chart:
+      name: emissary-crds-chart
+      repository: oci://ghcr.io/emissary-ingress
+      version: "3.10.0"
+    namespace: {{ $crds.namespace }}
+    {{- if $crds.overrideAllValues }}
+    values:
+      {{- toYaml $crds.overrideAllValues | nindent 6 }}
+    {{- else }}
+    values:
+      enableLegacyVersions: false
+      {{- if $crds.values }}
+      {{- toYaml $crds.values | nindent 6 }}
+      {{- end }}
+    {{- end }}
+  rollbackLimit: 3
+  providerConfigRef:
+    name: {{ $em.providerConfigRef.name }}
+    kind: {{ $em.providerConfigRef.kind }}
+{{- end }}

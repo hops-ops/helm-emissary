@@ -1,0 +1,42 @@
+# code: language=yaml
+#
+# Extract observed state from the Helm releases
+#
+
+{{- $raw := $.observed.resources | default dict }}
+
+# ==============================================================================
+# Observe CRDs release
+# ==============================================================================
+{{- $crdsEntry := get $raw "helm-release-emissary-crds" | default dict }}
+{{- $crdsResource := $crdsEntry.resource | default dict }}
+{{- $crdsStatus := $crdsResource.status | default dict }}
+
+{{- $crdsReady := false }}
+{{- range ($crdsStatus.conditions | default list) }}
+  {{- if and (eq .type "Ready") (eq .status "True") }}
+    {{- $crdsReady = true }}
+  {{- end }}
+{{- end }}
+
+# ==============================================================================
+# Observe Ingress release
+# ==============================================================================
+{{- $ingressEntry := get $raw "helm-release-emissary-ingress" | default dict }}
+{{- $ingressResource := $ingressEntry.resource | default dict }}
+{{- $ingressStatus := $ingressResource.status | default dict }}
+
+{{- $ingressReady := false }}
+{{- range ($ingressStatus.conditions | default list) }}
+  {{- if and (eq .type "Ready") (eq .status "True") }}
+    {{- $ingressReady = true }}
+  {{- end }}
+{{- end }}
+
+# ==============================================================================
+# Store observed state
+# ==============================================================================
+{{- $state = set $state "observed" (dict
+  "crds" (dict "ready" $crdsReady)
+  "ingress" (dict "ready" $ingressReady)
+) }}

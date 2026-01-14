@@ -1,0 +1,47 @@
+name: on-pr
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/on-pr.yaml'
+      - '.gitops/**'
+      - 'apis/**'
+      - 'examples/**'
+      - 'functions/**'
+      - 'tests/**'
+      - 'upbound.yaml'
+
+permissions:
+  packages: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml@v2.13.0
+    with:
+      examples: |
+        [
+          { "example": "examples/emissary/minimal.yaml" },
+          { "example": "examples/emissary/standard.yaml" }
+        ]
+      api_path: apis/emissary
+      error_on_missing_schemas: true
+
+  test:
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/test.yaml@v2.13.0
+
+  e2e:
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e.yaml@v2.13.0
+
+  publish:
+    needs:
+      - validate
+      - test
+      - e2e
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/publish.yaml@v2.13.0
+    secrets: inherit
+    with:
+      tag: 0.0.0-pr.${{ github.event.number }}.${{ github.run_number }}

@@ -1,0 +1,41 @@
+# code: language=yaml
+#
+# Compute status values from observed state
+#
+
+{{- $em := $state.emissary }}
+{{- $obs := $state.observed }}
+
+# ==============================================================================
+# Compute status output
+# ==============================================================================
+
+# Determine overall ready state - both CRDs and ingress must be ready (if enabled)
+{{- $crdsReady := $obs.crds.ready | default false }}
+{{- $ingressReady := $obs.ingress.ready | default false }}
+
+{{- $ready := true }}
+{{- if $em.crds.enabled }}
+  {{- if not $crdsReady }}
+    {{- $ready = false }}
+  {{- end }}
+{{- end }}
+{{- if $em.ingress.enabled }}
+  {{- if not $ingressReady }}
+    {{- $ready = false }}
+  {{- end }}
+{{- end }}
+
+{{- $state = set $state "status" (dict
+  "ready" $ready
+  "crds" (dict
+    "name" $em.crds.releaseName
+    "namespace" $em.crds.namespace
+    "ready" $crdsReady
+  )
+  "ingress" (dict
+    "name" $em.ingress.releaseName
+    "namespace" $em.ingress.namespace
+    "ready" $ingressReady
+  )
+) }}

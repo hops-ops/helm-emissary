@@ -1,0 +1,132 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: emissary.helm.hops.ops.com.ai
+spec:
+  group: helm.hops.ops.com.ai
+  names:
+    kind: Emissary
+    plural: emissary
+  scope: Namespaced
+
+  versions:
+  - name: v1alpha1
+    served: true
+    referenceable: true
+    schema:
+      openAPIV3Schema:
+        description: Emissary installs the complete Emissary-ingress API Gateway (CRDs + ingress controller).
+        type: object
+        properties:
+          spec:
+            description: EmissarySpec defines the desired state of Emissary.
+            type: object
+            required:
+            - clusterName
+            properties:
+              clusterName:
+                description: Name of the target cluster. Used as default for provider config names.
+                type: string
+
+              managementPolicies:
+                description: Management policies for all composed resources. Defaults to ["*"].
+                type: array
+                items:
+                  type: string
+                default:
+                - "*"
+
+              labels:
+                description: Custom labels applied to all managed resources. Merged with default labels.
+                type: object
+                additionalProperties:
+                  type: string
+                x-kubernetes-preserve-unknown-fields: true
+
+              providerConfigRef:
+                description: Reference to the Helm ProviderConfig.
+                type: object
+                properties:
+                  name:
+                    description: Name of the ProviderConfig. Defaults to clusterName.
+                    type: string
+                  kind:
+                    description: Kind of the ProviderConfig. Defaults to ProviderConfig.
+                    type: string
+                    enum:
+                    - ProviderConfig
+                    - ClusterProviderConfig
+
+              crds:
+                description: Configuration for the Emissary CRDs chart.
+                type: object
+                properties:
+                  enabled:
+                    description: Whether to install emissary-crds. Defaults to true.
+                    type: boolean
+                    default: true
+                  namespace:
+                    description: Namespace for the CRDs release. Defaults to emissary.
+                    type: string
+                  name:
+                    description: Helm release name. Defaults to emissary-crds.
+                    type: string
+                  values:
+                    description: Helm values merged with defaults.
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  overrideAllValues:
+                    description: Helm values that replace all defaults.
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+
+              ingress:
+                description: Configuration for the Emissary-ingress chart.
+                type: object
+                properties:
+                  enabled:
+                    description: Whether to install emissary-ingress. Defaults to true.
+                    type: boolean
+                    default: true
+                  namespace:
+                    description: Namespace for the ingress release. Defaults to emissary.
+                    type: string
+                  name:
+                    description: Helm release name. Defaults to emissary.
+                    type: string
+                  values:
+                    description: Helm values merged with defaults.
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  overrideAllValues:
+                    description: Helm values that replace all defaults.
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+
+          status:
+            description: EmissaryStatus defines the observed state of Emissary.
+            type: object
+            properties:
+              ready:
+                description: Overall readiness of the Emissary installation.
+                type: boolean
+              crds:
+                description: Status of the CRDs release.
+                type: object
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  ready:
+                    type: boolean
+              ingress:
+                description: Status of the ingress release.
+                type: object
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  ready:
+                    type: boolean

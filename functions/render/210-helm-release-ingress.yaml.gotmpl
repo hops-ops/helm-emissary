@@ -1,0 +1,50 @@
+# code: language=yaml
+#
+# Helm release for Emissary-ingress
+#
+# Emissary-ingress provides:
+# - Kubernetes-native API Gateway
+# - Rate limiting, authentication, and traffic management
+# - gRPC and WebSocket support
+# - Automatic service discovery
+#
+
+{{- $em := $state.emissary }}
+{{- $ingress := $em.ingress }}
+
+{{- if $ingress.enabled }}
+---
+apiVersion: helm.m.crossplane.io/v1beta1
+kind: Release
+metadata:
+  name: {{ $ingress.releaseName }}
+  annotations:
+    {{ setResourceNameAnnotation "helm-release-emissary-ingress" }}
+  labels: {{ $em.labels | toJson }}
+spec:
+  managementPolicies: {{ $em.managementPolicies | toJson }}
+  forProvider:
+    chart:
+      name: emissary-ingress
+      repository: oci://ghcr.io/emissary-ingress
+      version: "3.10.0"
+    namespace: {{ $ingress.namespace }}
+    {{- if $ingress.overrideAllValues }}
+    values:
+      {{- toYaml $ingress.overrideAllValues | nindent 6 }}
+    {{- else }}
+    values:
+      fullnameOverride: emissary
+      nameOverride: emissary
+      # Don't wait for CRDs - we install them separately
+      waitForApiext:
+        enabled: false
+      {{- if $ingress.values }}
+      {{- toYaml $ingress.values | nindent 6 }}
+      {{- end }}
+    {{- end }}
+  rollbackLimit: 3
+  providerConfigRef:
+    name: {{ $em.providerConfigRef.name }}
+    kind: {{ $em.providerConfigRef.kind }}
+{{- end }}
